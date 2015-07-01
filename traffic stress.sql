@@ -1,91 +1,91 @@
 ------------------------------------------------------
 --wipe old values
 ------------------------------------------------------
-UPDATE	generated.road_network
-SET			ft_seg_stress=NULL,
-				ft_int_stress=NULL,
-				tf_seg_stress=NULL,
-				tf_int_stress=NULL;
+UPDATE  generated.road_network
+SET     ft_seg_stress=NULL,
+        ft_int_stress=NULL,
+        tf_seg_stress=NULL,
+        tf_int_stress=NULL;
 
 
 ------------------------------------------------------
 --apply segment stress using tables
 ------------------------------------------------------
 -- mixed ft direction
-UPDATE	generated.road_network
-SET			ft_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_mixed s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					generated.road_network.adt <= s.adt
-												AND					generated.road_network.ft_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		(COALESCE(ft_seg_lanes_bike_wd_ft,0) < 4 AND COALESCE(ft_seg_lanes_park_wd_ft,0) = 0)
-OR			COALESCE(ft_seg_lanes_bike_wd_ft,0) + COALESCE(ft_seg_lanes_park_wd_ft,0) < 12;
+UPDATE  generated.road_network
+SET     ft_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_mixed s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         generated.road_network.adt <= s.adt
+                        AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   (COALESCE(ft_seg_lanes_bike_wd_ft,0) < 4 AND COALESCE(ft_seg_lanes_park_wd_ft,0) = 0)
+OR      COALESCE(ft_seg_lanes_bike_wd_ft,0) + COALESCE(ft_seg_lanes_park_wd_ft,0) < 12;
 
 -- mixed tf direction
-UPDATE	generated.road_network
-SET			tf_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_mixed s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					generated.road_network.adt <= s.adt
-												AND					generated.road_network.tf_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		(COALESCE(tf_seg_lanes_bike_wd_ft,0) < 4 AND COALESCE(tf_seg_lanes_park_wd_ft,0) = 0)
-OR			COALESCE(tf_seg_lanes_bike_wd_ft,0) + COALESCE(tf_seg_lanes_park_wd_ft,0) < 12;
+UPDATE  generated.road_network
+SET     tf_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_mixed s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         generated.road_network.adt <= s.adt
+                        AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   (COALESCE(tf_seg_lanes_bike_wd_ft,0) < 4 AND COALESCE(tf_seg_lanes_park_wd_ft,0) = 0)
+OR      COALESCE(tf_seg_lanes_bike_wd_ft,0) + COALESCE(tf_seg_lanes_park_wd_ft,0) < 12;
 
 -- bike lane no parking ft direction
-UPDATE	generated.road_network
-SET			ft_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_bike_no_park s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					generated.road_network.ft_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
-												AND					generated.road_network.ft_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		ft_seg_lanes_bike_wd_ft >= 4
-AND 		COALESCE(ft_seg_lanes_park_wd_ft,0) = 0;
+UPDATE  generated.road_network
+SET     ft_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_bike_no_park s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         generated.road_network.ft_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
+                        AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   ft_seg_lanes_bike_wd_ft >= 4
+AND     COALESCE(ft_seg_lanes_park_wd_ft,0) = 0;
 
 -- bike lane no parking tf direction
-UPDATE	generated.road_network
-SET			tf_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_bike_no_park s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					generated.road_network.tf_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
-												AND					generated.road_network.tf_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		tf_seg_lanes_bike_wd_ft >= 4
-AND 		COALESCE(tf_seg_lanes_park_wd_ft,0) = 0;
+UPDATE  generated.road_network
+SET     tf_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_bike_no_park s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         generated.road_network.tf_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
+                        AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   tf_seg_lanes_bike_wd_ft >= 4
+AND     COALESCE(tf_seg_lanes_park_wd_ft,0) = 0;
 
 -- parking with or without bike lanes ft direction
-UPDATE	generated.road_network
-SET			ft_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_bike_w_park s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					COALESCE(generated.road_network.ft_seg_lanes_bike_wd_ft,0) + generated.road_network.ft_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
-												AND					generated.road_network.ft_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		COALESCE(ft_seg_lanes_park_wd_ft,0) > 0
-AND			ft_seg_lanes_park_wd_ft + COALESCE(ft_seg_lanes_bike_wd_ft,0) >= 12;
+UPDATE  generated.road_network
+SET     ft_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_bike_w_park s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         COALESCE(generated.road_network.ft_seg_lanes_bike_wd_ft,0) + generated.road_network.ft_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
+                        AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   COALESCE(ft_seg_lanes_park_wd_ft,0) > 0
+AND     ft_seg_lanes_park_wd_ft + COALESCE(ft_seg_lanes_bike_wd_ft,0) >= 12;
 
 
 
 
 
 -- parking with or without bike lanes tf direction
-UPDATE	generated.road_network
-SET			tf_seg_stress=(	SELECT			stress
-												FROM				generated.seg_stress_bike_w_park s
-												WHERE				generated.road_network.speed_limit <= s.speed
-												AND					COALESCE(generated.road_network.tf_seg_lanes_bike_wd_ft,0) + generated.road_network.tf_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
-												AND					generated.road_network.tf_seg_lanes_thru <= s.lanes
-												ORDER BY		s.stress ASC
-												LIMIT				1)
-WHERE		COALESCE(tf_seg_lanes_park_wd_ft,0) > 0
-AND			tf_seg_lanes_park_wd_ft + COALESCE(tf_seg_lanes_bike_wd_ft,0) >= 12;
+UPDATE  generated.road_network
+SET     tf_seg_stress=( SELECT      stress
+                        FROM        generated.seg_stress_bike_w_park s
+                        WHERE       generated.road_network.speed_limit <= s.speed
+                        AND         COALESCE(generated.road_network.tf_seg_lanes_bike_wd_ft,0) + generated.road_network.tf_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
+                        AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
+                        ORDER BY    s.stress ASC
+                        LIMIT       1)
+WHERE   COALESCE(tf_seg_lanes_park_wd_ft,0) > 0
+AND     tf_seg_lanes_park_wd_ft + COALESCE(tf_seg_lanes_bike_wd_ft,0) >= 12;
 
 
 
@@ -119,14 +119,14 @@ WHERE   one_way = 'ft';
 WHERE   flag_urban = 1
 AND     speed_mph <= 25
 AND     ((travel_lanes = 1 AND one_way = 1) OR (travel_lanes <= 2 AND one_way IS NULL));
-UPDATE	road
-SET		urb_stress_score = 2
+UPDATE    road
+SET        urb_stress_score = 2
 WHERE   flag_urban = 1
 AND     urb_stress_score IS NULL
 AND     speed_mph = 30
 AND     ((travel_lanes = 1 AND one_way = 1) OR (travel_lanes <= 2 AND one_way IS NULL));
-UPDATE	road
-SET		urb_stress_score = 3
+UPDATE    road
+SET        urb_stress_score = 3
 WHERE   flag_urban = 1
 AND     urb_stress_score IS NULL
 AND     speed_mph <= 25
@@ -177,74 +177,74 @@ AND     functional_class NOT IN ('Local','Ramp');
 --       documentation.
 ------------------------------------------------------
 -- up to 22 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  1050 THEN 1
-								WHEN adt <  1440 THEN 2
-								WHEN adt >= 1440 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft <= 22;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  1050 THEN 1
+                                WHEN adt <  1440 THEN 2
+                                WHEN adt >= 1440 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft <= 22;
 
 -- 22-24 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  1400 THEN 1
-								WHEN adt <  1925 THEN 2
-								WHEN adt >= 1925 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  22
-AND		roadway_width_ft <= 24;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  1400 THEN 1
+                                WHEN adt <  1925 THEN 2
+                                WHEN adt >= 1925 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  22
+AND        roadway_width_ft <= 24;
 
 -- 24-26 foot lanes (same as 22-24)
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  1400 THEN 1
-								WHEN adt <  1925 THEN 2
-								WHEN adt >= 1925 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  24
-AND		roadway_width_ft <= 26;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  1400 THEN 1
+                                WHEN adt <  1925 THEN 2
+                                WHEN adt >= 1925 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  24
+AND        roadway_width_ft <= 26;
 
 -- 26-28 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  1715 THEN 1
-								WHEN adt <  2360 THEN 2
-								WHEN adt >= 2360 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  26
-AND		roadway_width_ft <= 28;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  1715 THEN 1
+                                WHEN adt <  2360 THEN 2
+                                WHEN adt >= 2360 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  26
+AND        roadway_width_ft <= 28;
 
 -- 28-30 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  3435 THEN 1
-								WHEN adt <  4720 THEN 2
-								WHEN adt >= 4720 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  28
-AND		roadway_width_ft <= 30;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  3435 THEN 1
+                                WHEN adt <  4720 THEN 2
+                                WHEN adt >= 4720 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  28
+AND        roadway_width_ft <= 30;
 
 -- 30-32 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  3450 THEN 1
-								WHEN adt <  4740 THEN 2
-								WHEN adt <  6035 THEN 3
-								WHEN adt >= 6035 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  30
-AND		roadway_width_ft <= 32;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  3450 THEN 1
+                                WHEN adt <  4740 THEN 2
+                                WHEN adt <  6035 THEN 3
+                                WHEN adt >= 6035 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  30
+AND        roadway_width_ft <= 32;
 
 -- >32 foot lanes
-UPDATE	road
-SET		rur_rdwy_rating=CASE	WHEN adt <  4035 THEN 1
-								WHEN adt <  5545 THEN 2
-								WHEN adt <  7325 THEN 3
-								WHEN adt >= 7325 THEN 4
-								END
-WHERE	flag_urban IS NULL
-AND		roadway_width_ft >  32;
+UPDATE    road
+SET        rur_rdwy_rating=CASE    WHEN adt <  4035 THEN 1
+                                WHEN adt <  5545 THEN 2
+                                WHEN adt <  7325 THEN 3
+                                WHEN adt >= 7325 THEN 4
+                                END
+WHERE    flag_urban IS NULL
+AND        roadway_width_ft >  32;
 
 -- null adt
 UPDATE  road
