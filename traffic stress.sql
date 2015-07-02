@@ -14,7 +14,7 @@ SET     ft_seg_stress=NULL,
 -- mixed ft direction
 UPDATE  generated.road_network
 SET     ft_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_mixed s
+                        FROM        generated.stress_seg_mixed s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         generated.road_network.adt <= s.adt
                         AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
@@ -26,7 +26,7 @@ OR      COALESCE(ft_seg_lanes_bike_wd_ft,0) + COALESCE(ft_seg_lanes_park_wd_ft,0
 -- mixed tf direction
 UPDATE  generated.road_network
 SET     tf_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_mixed s
+                        FROM        generated.stress_seg_mixed s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         generated.road_network.adt <= s.adt
                         AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
@@ -38,7 +38,7 @@ OR      COALESCE(tf_seg_lanes_bike_wd_ft,0) + COALESCE(tf_seg_lanes_park_wd_ft,0
 -- bike lane no parking ft direction
 UPDATE  generated.road_network
 SET     ft_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_bike_no_park s
+                        FROM        generated.stress_seg_bike_no_park s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         generated.road_network.ft_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
                         AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
@@ -50,7 +50,7 @@ AND     COALESCE(ft_seg_lanes_park_wd_ft,0) = 0;
 -- bike lane no parking tf direction
 UPDATE  generated.road_network
 SET     tf_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_bike_no_park s
+                        FROM        generated.stress_seg_bike_no_park s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         generated.road_network.tf_seg_lanes_bike_wd_ft <= s.bike_lane_wd_ft
                         AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
@@ -62,7 +62,7 @@ AND     COALESCE(tf_seg_lanes_park_wd_ft,0) = 0;
 -- parking with or without bike lanes ft direction
 UPDATE  generated.road_network
 SET     ft_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_bike_w_park s
+                        FROM        generated.stress_seg_bike_w_park s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         COALESCE(generated.road_network.ft_seg_lanes_bike_wd_ft,0) + generated.road_network.ft_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
                         AND         generated.road_network.ft_seg_lanes_thru <= s.lanes
@@ -71,14 +71,10 @@ SET     ft_seg_stress=( SELECT      stress
 WHERE   COALESCE(ft_seg_lanes_park_wd_ft,0) > 0
 AND     ft_seg_lanes_park_wd_ft + COALESCE(ft_seg_lanes_bike_wd_ft,0) >= 12;
 
-
-
-
-
 -- parking with or without bike lanes tf direction
 UPDATE  generated.road_network
 SET     tf_seg_stress=( SELECT      stress
-                        FROM        generated.seg_stress_bike_w_park s
+                        FROM        generated.stress_seg_bike_w_park s
                         WHERE       generated.road_network.speed_limit <= s.speed
                         AND         COALESCE(generated.road_network.tf_seg_lanes_bike_wd_ft,0) + generated.road_network.tf_seg_lanes_park_wd_ft <= s.bike_park_lane_wd_ft
                         AND         generated.road_network.tf_seg_lanes_thru <= s.lanes
@@ -87,6 +83,96 @@ SET     tf_seg_stress=( SELECT      stress
 WHERE   COALESCE(tf_seg_lanes_park_wd_ft,0) > 0
 AND     tf_seg_lanes_park_wd_ft + COALESCE(tf_seg_lanes_bike_wd_ft,0) >= 12;
 
+
+------------------------------------------------------
+--apply intersection stress
+------------------------------------------------------
+
+-- shared right turn lanes ft direction
+UPDATE  generated.road_network
+SET     ft_int_stress = 3
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) < 4
+AND     ft_int_lanes_rt_len_ft >= 75
+AND     ft_int_lanes_rt_len_ft < 150;
+UPDATE  generated.road_network
+SET     ft_int_stress = 4
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) < 4
+AND     ft_int_lanes_rt_len_ft >= 150;
+
+-- shared right turn lanes tf direction
+UPDATE  generated.road_network
+SET     tf_int_stress = 3
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) < 4
+AND     tf_int_lanes_rt_len_ft >= 75
+AND     tf_int_lanes_rt_len_ft < 150;
+UPDATE  generated.road_network
+SET     tf_int_stress = 4
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) < 4
+AND     tf_int_lanes_rt_len_ft >= 150;
+
+-- pocket bike lane w/right turn lanes ft direction
+UPDATE  generated.road_network
+SET     ft_int_stress = 2
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
+AND     ft_int_lanes_rt_len_ft <= 150
+AND     ft_int_lanes_rt_radius_speed_mph <= 15
+AND     ft_int_lanes_bike_pocket = 'straight';
+UPDATE  generated.road_network
+SET     ft_int_stress = 3
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
+AND     COALESCE(ft_int_lanes_rt_len_ft,0) > 0
+AND     ft_int_lanes_rt_radius_speed_mph <= 20
+AND     ft_int_lanes_bike_pocket = 'straight'
+AND     ft_int_stress IS NOT NULL;
+UPDATE  generated.road_network
+SET     ft_int_stress = 3
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
+AND     ft_int_lanes_rt_radius_speed_mph <= 15
+AND     ft_int_lanes_bike_pocket = 'shift';
+UPDATE  generated.road_network
+SET     ft_int_stress = 4
+WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
+AND     ft_int_stress IS NULL;
+
+-- pocket bike lane w/right turn lanes tf direction
+UPDATE  generated.road_network
+SET     tf_int_stress = 2
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
+AND     tf_int_lanes_rt_len_ft <= 150
+AND     tf_int_lanes_rt_radius_speed_mph <= 15
+AND     tf_int_lanes_bike_pocket = 'straight';
+UPDATE  generated.road_network
+SET     tf_int_stress = 3
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
+AND     COALESCE(tf_int_lanes_rt_len_ft,0) > 0
+AND     tf_int_lanes_rt_radius_speed_mph <= 20
+AND     tf_int_lanes_bike_pocket = 'straight'
+AND     tf_int_stress IS NOT NULL;
+UPDATE  generated.road_network
+SET     tf_int_stress = 3
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
+AND     tf_int_lanes_rt_radius_speed_mph <= 15
+AND     tf_int_lanes_bike_pocket = 'shift';
+UPDATE  generated.road_network
+SET     tf_int_stress = 4
+WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
+AND     tf_int_stress IS NULL;
+
+
+------------------------------------------------------
+--apply crossing stress
+------------------------------------------------------
+--no median (or less than 6 ft)
+UPDATE  generated.road_network
+SET     ft_cross_stress = ( SELECT      s.stress
+                            FROM        generated.stress_cross_no_median s
+                            WHERE       generated.road_network.ft_cross_speed_limit <= s.speed
+                            AND         generated.road_network.ft_cross_lanes <= s.lanes
+                            ORDER BY    s.stress ASC
+                            LIMIT       1)
+WHERE   COALESCE(ft_cross_median_wd_ft,0) < 6;
+
+--with median at least 6 ft
 
 
 
