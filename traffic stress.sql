@@ -4,8 +4,10 @@
 UPDATE  generated.road_network
 SET     ft_seg_stress=NULL,
         ft_int_stress=NULL,
+        ft_cross_stress=NULL,
         tf_seg_stress=NULL,
-        tf_int_stress=NULL;
+        tf_int_stress=NULL,
+        tf_cross_stress=NULL;
 
 
 ------------------------------------------------------
@@ -162,7 +164,7 @@ AND     tf_int_stress IS NULL;
 ------------------------------------------------------
 --apply crossing stress
 ------------------------------------------------------
---no median (or less than 6 ft)
+--no median (or less than 6 ft), ft
 UPDATE  generated.road_network
 SET     ft_cross_stress = ( SELECT      s.stress
                             FROM        generated.stress_cross_no_median s
@@ -172,8 +174,45 @@ SET     ft_cross_stress = ( SELECT      s.stress
                             LIMIT       1)
 WHERE   COALESCE(ft_cross_median_wd_ft,0) < 6;
 
---with median at least 6 ft
+--no median (or less than 6 ft), tf
+UPDATE  generated.road_network
+SET     tf_cross_stress = ( SELECT      s.stress
+                            FROM        generated.stress_cross_no_median s
+                            WHERE       generated.road_network.tf_cross_speed_limit <= s.speed
+                            AND         generated.road_network.tf_cross_lanes <= s.lanes
+                            ORDER BY    s.stress ASC
+                            LIMIT       1)
+WHERE   COALESCE(tf_cross_median_wd_ft,0) < 6;
 
+--with median at least 6 ft, ft
+UPDATE  generated.road_network
+SET     ft_cross_stress = ( SELECT      s.stress
+                            FROM        generated.stress_cross_w_median s
+                            WHERE       generated.road_network.ft_cross_speed_limit <= s.speed
+                            AND         generated.road_network.ft_cross_lanes <= s.lanes
+                            ORDER BY    s.stress ASC
+                            LIMIT       1)
+WHERE   COALESCE(ft_cross_median_wd_ft,0) >= 6;
+
+--with median at least 6 ft, tf
+UPDATE  generated.road_network
+SET     tf_cross_stress = ( SELECT      s.stress
+                            FROM        generated.stress_cross_w_median s
+                            WHERE       generated.road_network.tf_cross_speed_limit <= s.speed
+                            AND         generated.road_network.tf_cross_lanes <= s.lanes
+                            ORDER BY    s.stress ASC
+                            LIMIT       1)
+WHERE   COALESCE(tf_cross_median_wd_ft,0) >= 6;
+
+--traffic signals ft
+UPDATE  generated.road_network
+SET     ft_cross_stress = 1
+WHERE   ft_cross_signal = 1;
+
+--traffic signals tf
+UPDATE  generated.road_network
+SET     tf_cross_stress = 1
+WHERE   tf_cross_signal = 1;
 
 
 
@@ -184,13 +223,13 @@ WHERE   COALESCE(ft_cross_median_wd_ft,0) < 6;
 UPDATE  generated.road_network
 SET     ft_seg_stress = NULL,
         ft_int_stress = NULL,
+        ft_cross_stress = NULL,
 WHERE   one_way = 'tf';
 UPDATE  generated.road_network
 SET     tf_seg_stress = NULL,
         tf_int_stress = NULL,
+        tf_cross_stress = NULL
 WHERE   one_way = 'ft';
-
-
 
 
 
