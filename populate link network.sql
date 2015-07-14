@@ -10,7 +10,7 @@ CREATE TEMP TABLE lengths ( id SERIAL PRIMARY KEY,
 ON COMMIT DROP;
 
 INSERT INTO lengths (id, len, f_point, t_point)
-SELECT  id, 
+SELECT  id,
         ST_Length(geom) AS len,
         ST_LineInterpolatePoint(geom,LEAST(0.5*ST_Length(geom)-5,50.0)/ST_Length(geom)) AS f_point,
         ST_LineInterpolatePoint(geom,GREATEST(0.5*ST_Length(geom)+5,ST_Length(geom)-50)/ST_Length(geom)) AS t_point
@@ -51,7 +51,7 @@ FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
         lengths tl
-WHERE   f.id != t.id 
+WHERE   f.id != t.id
 AND     f.target = t.source
 AND     f.id = fl.id
 AND     t.id = tl.id
@@ -69,7 +69,7 @@ FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
         lengths tl
-WHERE   f.id != t.id 
+WHERE   f.id != t.id
 AND     f.target = t.target
 AND     f.id = fl.id
 AND     t.id = tl.id
@@ -87,7 +87,7 @@ FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
         lengths tl
-WHERE   f.id != t.id 
+WHERE   f.id != t.id
 AND     f.source = t.target
 AND     f.id = fl.id
 AND     t.id = tl.id
@@ -105,9 +105,17 @@ FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
         lengths tl
-WHERE   f.id != t.id 
+WHERE   f.id != t.id
 AND     f.source = t.source
 AND     f.id = fl.id
 AND     t.id = tl.id
 AND     (f.one_way IS NULL OR f.one_way = 'tf')
 AND     (t.one_way IS NULL OR t.one_way = 'ft');
+
+--delete illegal turns
+DELETE
+FROM    generated.link_network
+WHERE   EXISTS (SELECT  1
+                FROM    turn_restrictions
+                WHERE   from_id=generated.link_network.id_from
+                AND     to_id=generated.link_network.id_to);
