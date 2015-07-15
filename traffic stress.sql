@@ -85,6 +85,13 @@ SET     tf_seg_stress=( SELECT      stress
 WHERE   COALESCE(tf_seg_lanes_park_wd_ft,0) > 0
 AND     tf_seg_lanes_park_wd_ft + COALESCE(tf_seg_lanes_bike_wd_ft,0) >= 12;
 
+--overrides
+UPDATE  generated.road_network
+SET     ft_seg_stress = ft_seg_stress_override
+WHERE   ft_seg_stress_override IS NOT NULL;
+UPDATE  generated.road_network
+SET     tf_seg_stress = tf_seg_stress_override
+WHERE   tf_seg_stress_override IS NOT NULL;
 
 ------------------------------------------------------
 --apply intersection stress
@@ -118,19 +125,19 @@ SET     ft_int_stress = 2
 WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
 AND     ft_int_lanes_rt_len_ft <= 150
 AND     ft_int_lanes_rt_radius_speed_mph <= 15
-AND     ft_int_lanes_bike_pocket = 'straight';
+AND     ft_int_lanes_bike_straight = 1;
 UPDATE  generated.road_network
 SET     ft_int_stress = 3
 WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
 AND     COALESCE(ft_int_lanes_rt_len_ft,0) > 0
 AND     ft_int_lanes_rt_radius_speed_mph <= 20
-AND     ft_int_lanes_bike_pocket = 'straight'
+AND     ft_int_lanes_bike_straight = 1
 AND     ft_int_stress IS NOT NULL;
 UPDATE  generated.road_network
 SET     ft_int_stress = 3
 WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
 AND     ft_int_lanes_rt_radius_speed_mph <= 15
-AND     ft_int_lanes_bike_pocket = 'shift';
+AND     COALESCE(ft_int_lanes_bike_straight,0) = 0;
 UPDATE  generated.road_network
 SET     ft_int_stress = 4
 WHERE   COALESCE(ft_int_lanes_bike_wd_ft,0) >= 4
@@ -142,24 +149,31 @@ SET     tf_int_stress = 2
 WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
 AND     tf_int_lanes_rt_len_ft <= 150
 AND     tf_int_lanes_rt_radius_speed_mph <= 15
-AND     tf_int_lanes_bike_pocket = 'straight';
+AND     tf_int_lanes_bike_straight = 1;
 UPDATE  generated.road_network
 SET     tf_int_stress = 3
 WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
 AND     COALESCE(tf_int_lanes_rt_len_ft,0) > 0
 AND     tf_int_lanes_rt_radius_speed_mph <= 20
-AND     tf_int_lanes_bike_pocket = 'straight'
+AND     tf_int_lanes_bike_straight = 1
 AND     tf_int_stress IS NOT NULL;
 UPDATE  generated.road_network
 SET     tf_int_stress = 3
 WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
 AND     tf_int_lanes_rt_radius_speed_mph <= 15
-AND     tf_int_lanes_bike_pocket = 'shift';
+AND     COALESCE(tf_int_lanes_bike_straight,0) = 0;
 UPDATE  generated.road_network
 SET     tf_int_stress = 4
 WHERE   COALESCE(tf_int_lanes_bike_wd_ft,0) >= 4
 AND     tf_int_stress IS NULL;
 
+--overrides
+UPDATE  generated.road_network
+SET     ft_int_stress = ft_int_stress_override
+WHERE   ft_int_stress_override IS NOT NULL;
+UPDATE  generated.road_network
+SET     tf_int_stress = tf_int_stress_override
+WHERE   tf_int_stress_override IS NOT NULL;
 
 ------------------------------------------------------
 --apply crossing stress
@@ -214,7 +228,13 @@ UPDATE  generated.road_network
 SET     tf_cross_stress = 1
 WHERE   tf_cross_signal = 1;
 
-
+--overrides
+UPDATE  generated.road_network
+SET     tf_cross_stress = tf_cross_stress_override
+WHERE   tf_cross_stress_override IS NOT NULL;
+UPDATE  generated.road_network
+SET     ft_cross_stress = ft_cross_stress_override
+WHERE   ft_cross_stress_override IS NOT NULL;
 
 
 ------------------------------------------------------
@@ -223,179 +243,10 @@ WHERE   tf_cross_signal = 1;
 UPDATE  generated.road_network
 SET     ft_seg_stress = NULL,
         ft_int_stress = NULL,
-        ft_cross_stress = NULL,
+        ft_cross_stress = NULL
 WHERE   one_way = 'tf';
 UPDATE  generated.road_network
 SET     tf_seg_stress = NULL,
         tf_int_stress = NULL,
         tf_cross_stress = NULL
 WHERE   one_way = 'ft';
-
-
-
-
-
-
-
-
-
-
-
-WHERE   flag_urban = 1
-AND     speed_mph <= 25
-AND     ((travel_lanes = 1 AND one_way = 1) OR (travel_lanes <= 2 AND one_way IS NULL));
-UPDATE    road
-SET        urb_stress_score = 2
-WHERE   flag_urban = 1
-AND     urb_stress_score IS NULL
-AND     speed_mph = 30
-AND     ((travel_lanes = 1 AND one_way = 1) OR (travel_lanes <= 2 AND one_way IS NULL));
-UPDATE    road
-SET        urb_stress_score = 3
-WHERE   flag_urban = 1
-AND     urb_stress_score IS NULL
-AND     speed_mph <= 25
-AND     ((travel_lanes = 2 AND one_way = 1) OR (travel_lanes <= 4 AND one_way IS NULL));
-UPDATE  road
-SET     urb_stress_score = 1
-WHERE   flag_urban = 1
-AND     urb_stress_score IS NULL
-AND     functional_class = 'Local';
-UPDATE  road
-SET     urb_stress_score = 4
-WHERE   functional_class = 'Ramp'
-AND     flag_urban = 1;
-UPDATE  road
-SET     urb_stress_score = 4
-WHERE   flag_urban = 1
-AND     urb_stress_score IS NULL;
-UPDATE  road
-SET     urb_stress_score = NULL
-WHERE   flag_urban = 1
-AND     speed_mph IS NULL
-AND     functional_class NOT IN ('Local','Ramp');
-
-
-
-------------------------------------------------------
---bike lanes
-------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-------------------------------------------------------
---rural
-------------------------------------------------------
--- NOTE: No adjustment is made for yellow line
---       percentage because of lack of data.
---       Truck traffic was assumed at 10% due
---       to lack of data as directed by the
---       documentation.
-------------------------------------------------------
--- up to 22 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  1050 THEN 1
-                                WHEN adt <  1440 THEN 2
-                                WHEN adt >= 1440 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft <= 22;
-
--- 22-24 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  1400 THEN 1
-                                WHEN adt <  1925 THEN 2
-                                WHEN adt >= 1925 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  22
-AND        roadway_width_ft <= 24;
-
--- 24-26 foot lanes (same as 22-24)
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  1400 THEN 1
-                                WHEN adt <  1925 THEN 2
-                                WHEN adt >= 1925 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  24
-AND        roadway_width_ft <= 26;
-
--- 26-28 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  1715 THEN 1
-                                WHEN adt <  2360 THEN 2
-                                WHEN adt >= 2360 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  26
-AND        roadway_width_ft <= 28;
-
--- 28-30 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  3435 THEN 1
-                                WHEN adt <  4720 THEN 2
-                                WHEN adt >= 4720 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  28
-AND        roadway_width_ft <= 30;
-
--- 30-32 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  3450 THEN 1
-                                WHEN adt <  4740 THEN 2
-                                WHEN adt <  6035 THEN 3
-                                WHEN adt >= 6035 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  30
-AND        roadway_width_ft <= 32;
-
--- >32 foot lanes
-UPDATE    road
-SET        rur_rdwy_rating=CASE    WHEN adt <  4035 THEN 1
-                                WHEN adt <  5545 THEN 2
-                                WHEN adt <  7325 THEN 3
-                                WHEN adt >= 7325 THEN 4
-                                END
-WHERE    flag_urban IS NULL
-AND        roadway_width_ft >  32;
-
--- null adt
-UPDATE  road
-SET     rur_rdwy_rating = 1
-WHERE   rur_rdwy_rating IS NULL
-AND     flag_urban IS NULL
-AND     (adt IS NULL OR speed_mph IS NULL)
-AND     functional_class = 'Local';
-
--- unpaved roads (NOT USED CURRENTLY BECAUSE THERE ARE EFFECTIVELY NO UNPAVED ROADS IN WILL COUNTY)
---UPDATE  road
---SET     rur_rdwy_rating = 4
---WHERE   paved = 0
---AND     flag_urban IS NULL;
-
-
-------------------------------------------------------
---final score
-------------------------------------------------------
--- overrides
-UPDATE  road
-SET     urb_stress_score=urb_stress_override
-WHERE   urb_stress_override IS NOT NULL;
-UPDATE  road
-SET     rur_rdwy_rating=rur_rdwy_rating_override
-WHERE   rur_rdwy_rating_override IS NOT NULL;
-
-UPDATE  road
-SET     stress_score = COALESCE(urb_stress_score,rur_rdwy_rating + 1);
