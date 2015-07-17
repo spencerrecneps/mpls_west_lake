@@ -238,6 +238,17 @@ WHERE   ft_cross_stress_override IS NOT NULL;
 
 
 ------------------------------------------------------
+--apply trail segment and approach stress
+------------------------------------------------------
+UPDATE  generated.road_network
+SET     ft_seg_stress = 1,
+        ft_int_stress = 1,
+        tf_seg_stress = 1,
+        tf_int_stress = 1
+WHERE   functional_class = 'Trail';
+
+
+------------------------------------------------------
 --nullify stress on contraflow one-way segments
 ------------------------------------------------------
 UPDATE  generated.road_network
