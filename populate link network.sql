@@ -20,11 +20,13 @@ FROM    generated.road_network;
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(l.f_point,l.t_point),
         r.id,
         r.id,
-        r.ft_seg_stress
+        r.ft_seg_stress,
+        r.cost
 FROM    generated.road_network r,
         lengths l
 WHERE   r.id=l.id
@@ -34,11 +36,13 @@ AND     (r.one_way IS NULL OR r.one_way = 'ft');
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(l.t_point,l.f_point),
         r.id,
         r.id,
-        r.tf_seg_stress
+        r.tf_seg_stress,
+        r.cost
 FROM    generated.road_network r,
         lengths l
 WHERE   r.id=l.id
@@ -48,11 +52,13 @@ AND     (r.one_way IS NULL OR r.one_way = 'tf');
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(fl.t_point,tl.f_point),
         f.id,
         t.id,
-        GREATEST(f.ft_int_stress,f.ft_cross_stress)
+        GREATEST(f.ft_int_stress,f.ft_cross_stress),
+        0
 FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
@@ -68,11 +74,13 @@ AND     (t.one_way IS NULL OR t.one_way = 'ft');
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(fl.t_point,tl.t_point),
         f.id,
         t.id,
-        GREATEST(f.ft_int_stress,f.ft_cross_stress)
+        GREATEST(f.ft_int_stress,f.ft_cross_stress),
+        0
 FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
@@ -88,11 +96,13 @@ AND     (t.one_way IS NULL OR t.one_way = 'tf');
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(fl.f_point,tl.t_point),
         f.id,
         t.id,
-        GREATEST(f.tf_int_stress,f.tf_cross_stress)
+        GREATEST(f.tf_int_stress,f.tf_cross_stress),
+        0
 FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
@@ -108,11 +118,13 @@ AND     (t.one_way IS NULL OR t.one_way = 'tf');
 INSERT INTO generated.link_network (    geom,
                                         id_from,
                                         id_to,
-                                        stress)
+                                        stress,
+                                        cost)
 SELECT  ST_Makeline(fl.f_point,tl.f_point),
         f.id,
         t.id,
-        GREATEST(f.tf_int_stress,f.tf_cross_stress)
+        GREATEST(f.tf_int_stress,f.tf_cross_stress),
+        0
 FROM    generated.road_network f,
         generated.road_network t,
         lengths fl,
