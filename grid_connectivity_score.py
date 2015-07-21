@@ -64,7 +64,7 @@ def sumCosts(nodes,graphWeights):
 #iterate grid features and compile scores
 progress.setText('Generating grid scores')
 gridProvider = grid.dataProvider()
-writer = VectorWriter(Output_grid, None, [QgsField("road_id", QVariant.Int),QgsField("cost_uncon", QVariant.Int),QgsField("cost_const", QVariant.Int),QgsField("conn_score", QVariant.String)], gridProvider.geometryType(), gridProvider.crs() )
+writer = VectorWriter(Output_grid, None, [QgsField("road_id", QVariant.Int),QgsField("cost_uncon", QVariant.Int),QgsField("cost_const", QVariant.Int),QgsField("conn_score", QVariant.Double)], gridProvider.geometryType(), gridProvider.crs() )
 gridFeatures = grid.getFeatures()
 for i, gf in enumerate(gridFeatures):
     targetRoadId = gf.attribute(Road_ID_field)
@@ -84,12 +84,11 @@ for i, gf in enumerate(gridFeatures):
             progress.setText('Writing grid feature')
             newFeat = QgsFeature()
             newFeat.setGeometry(gf.geometry())
-            #newFeat.initAttributes(4)
-            #newFeat.setAttribute(0,gf.attribute(Road_ID_field))
-            #newFeat.setAttribute(1,costNoStress)
-            #newFeat.setAttribute(2,costStress)
-            #newFeat.setAttribute(3,float(costStress)/float(costNoStress))
+            newFeat.initAttributes(4)
+            newFeat.setAttribute(0,gf.attribute(Road_ID_field))
+            newFeat.setAttribute(1,costNoStress)
+            newFeat.setAttribute(2,costStress)
+            newFeat.setAttribute(3,float(costStress)/float(costNoStress))
             writer.addFeature(newFeat)
 
-
-        
+del writer
