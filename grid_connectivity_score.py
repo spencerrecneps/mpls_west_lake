@@ -54,6 +54,8 @@ if not SG.has_node(sourceRoadId):
 #helper function to sum costs from graph
 def sumCosts(nodes,graphWeights):
     cost = 0
+    del nodes[1]    #remove the source and target nodes from consideration
+    del nodes[-1]
     for j, node in enumerate(nodes):
             try:
                 cost = cost + graphCosts[(node,nodes[j+1])]
@@ -64,31 +66,43 @@ def sumCosts(nodes,graphWeights):
 #iterate grid features and compile scores
 progress.setText('Generating grid scores')
 gridProvider = grid.dataProvider()
-writer = VectorWriter(Output_grid, None, [QgsField("road_id", QVariant.Int),QgsField("cost_uncon", QVariant.Int),QgsField("cost_const", QVariant.Int),QgsField("conn_score", QVariant.Double)], gridProvider.geometryType(), gridProvider.crs() )
+writer = VectorWriter(Output_grid, None, [QgsField("road_id", QVariant.Int),QgsField("status",QVariant.String),QgsField("cost_uncon", QVariant.Int),QgsField("cost_const", QVariant.Int),QgsField("conn_score", QVariant.Double)], gridProvider.geometryType(), gridProvider.crs() )
 gridFeatures = grid.getFeatures()
 for i, gf in enumerate(gridFeatures):
     targetRoadId = gf.attribute(Road_ID_field)
     progress.setInfo('from: ' + str(sourceRoadId) + ' to: ' + str(targetRoadId))
 
-    if (not targetRoadId == sourceRoadId and SG.has_node(targetRoadId)):
-        if nx.has_path(SG,source=sourceRoadId,target=targetRoadId):
-            #get shortest path without stress
-            pathNoStress = nx.shortest_path(DG,source=sourceRoadId,target=targetRoadId,weight='weight')
-            #get shortest path with stress
-            pathStress = nx.shortest_path(SG,source=sourceRoadId,target=targetRoadId,weight='weight')
-            #get cost values
-            costNoStress = sumCosts(pathNoStress,graphCosts)
-            costStress = sumCosts(pathStress,graphCosts)
+    #write new feature
+    progress.setText('Writing grid feature')
+    newFeat = QgsFeature()
+    newFeat.setGeometry(gf.geometry())
+    newFeat.initAttributes(5)
+    newFeat.setAttribute(0,gf.attribute(Road_ID_field))
 
-            #write new feature
-            progress.setText('Writing grid feature')
-            newFeat = QgsFeature()
-            newFeat.setGeometry(gf.geometry())
-            newFeat.initAttributes(4)
-            newFeat.setAttribute(0,gf.attribute(Road_ID_field))
-            newFeat.setAttribute(1,costNoStress)
-            newFeat.setAttribute(2,costStress)
-            newFeat.setAttribute(3,float(costStress)/float(costNoStress))
-            writer.addFeature(newFeat)
+    if targetRoadId == sourceRoadId:
+        newFeat.setAttribute(1,'Source cell')
+    elif not SG.has_node(targetRoadId):
+        newFeat.setAttribute(1,'Unreachable')
+    elif not nx.has_path(SG,source=sourceRoadId,target=targetRoadId):
+        newFeat.setAttribute(1,'Unreachable')
+    else:
+        #get shortest path without stress
+        pathNoStress = nx.shortest_path(DG,source=sourceRoadId,target=targetRoadId,weight='weight')
+        #get shortest path with stress
+        pathStress = nx.shortest_path(SG,source=sourceRoadId,target=targetRoadId,weight='weight')
+        #get cost values
+        costNoStress = sumCosts(pathNoStress,graphCosts)
+        costStress = sumCosts(pathStress,graphCosts)
+
+        #add attributes
+        newFeat.setAttribute(1,'Target cell')
+        newFeat.setAttribute(2,costNoStress)
+        newFeat.setAttribute(3,costStress)
+        if costNoStress == 0:
+            1
+        else:
+            newFeat.setAttribute(4,float(costStress)/float(costNoStress))
+
+    writer.addFeature(newFeat)
 
 del writer

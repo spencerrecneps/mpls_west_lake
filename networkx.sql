@@ -9,9 +9,11 @@ WITH selfs AS ( SELECT  id_from AS id,
 INSERT INTO networkx (id_from,id_to,stress,cost)
 SELECT  id_from::int,
         id_to::int,
-        GREATEST(selfs.stress,link_network.stress)::int,
-        selfs.cost::int
+        GREATEST(sf.stress,st.stress,link_network.stress)::int,
+        sf.cost::int
 FROM    link_network,
-        selfs
+        selfs sf,
+        selfs st
 WHERE   id_from != id_to
-AND     link_network.id_from = selfs.id;
+AND     link_network.id_from = sf.id
+AND     link_network.id_to = st.id;
